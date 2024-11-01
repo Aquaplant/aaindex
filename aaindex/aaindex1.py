@@ -99,10 +99,14 @@ class AAIndex1():
         #get dict of categories
         self.categories = self.get_all_categories()
 
-        #if parsed json of AAindex (aaindex1.json) already in file then read it and return 
-        if (os.path.isfile(os.path.join(self.aaindex_module_path, self.data_dir, self.aaindex_filename + '.json'))):
-            with open(os.path.join(self.aaindex_module_path, self.data_dir, self.aaindex_filename + '.json')) as aai_json:
-                self.aaindex_json = json.load(aai_json)
+        #if parsed json of AAindex (aaindex1.json) already in file then read it and return
+        aaindex_json_file = os.path.join(self.aaindex_module_path, self.data_dir, self.aaindex_filename + '.json')
+        if os.path.isfile(aaindex_json_file):
+            try:
+                with open(aaindex_json_file) as aai_json:
+                    self.aaindex_json = json.load(aai_json)
+            except (IOError, json.JSONDecodeError):  # unblocking import for corrupted local json file
+                self.aaindex_json = self.parse_aaindex()
         else:
             #parse AAindex database file into JSON format
             self.aaindex_json = self.parse_aaindex()
@@ -139,16 +143,16 @@ class AAIndex1():
                          "I":[]}
 
         #open AAi file for reading and parsing, by default it should be stored in self.data_dir
+        lines = [""]
         try:
             tmp_filepath = os.path.join(self.aaindex_module_path, self.data_dir, self.aaindex_filename)
             f = open(tmp_filepath,'r')
+            # read lines of file
+            lines = f.readlines()
+            f.close()
         except IOError:
             print('Error opening AAindex1 file, check file is in filepath: {}.'.format(
                     os.path.join(self.aaindex_module_path, self.data_dir, self.aaindex_filename)))
-
-        #read lines of file
-        lines = f.readlines()
-        f.close()
 
         #pattern that seperates each AAi record
         clean_up_pattern = re.compile("\"")
@@ -289,6 +293,7 @@ class AAIndex1():
                 f = open((os.path.join(self.aaindex_module_path, self.data_dir, aaindex_category_file)),'r')
             except IOError:
                 print('Error opening AAindex1 category file: {}.'.format(os.path.join(self.aaindex_module_path, self.data_dir, aaindex_category_file)))
+                raise
 
         #get total number of lines in file
         # total_lines = len(f.readlines(  ))
